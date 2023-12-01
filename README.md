@@ -16,7 +16,7 @@ Here's a breakdown of the command:
 
 * `> workflow.cwl`: This part of the command redirects the modified output to a new file named `workflow.cwl`.
 
-## Run the CWL Application Package
+## Run the Application Package
 
 The new `workflow.cwl` can be executed with:
 
