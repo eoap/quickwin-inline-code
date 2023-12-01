@@ -16,7 +16,7 @@ Here's a breakdown of the command:
 
 * `> workflow.cwl`: This part of the command redirects the modified output to a new file named `workflow.cwl`.
 
-## Running the CWL Application Package
+## Run the CWL Application Package
 
 The new `workflow.cwl` can be executed with:
 
@@ -30,4 +30,16 @@ Where `params.yaml` contains:
 item: "https://earth-search.aws.element84.com/v0/collections/sentinel-s2-l2a-cogs/items/S2B_10TFK_20210713_0_L2A"
 aoi: "-121.399,39.834,-120.74,40.472"
 epsg: "EPSG:4326"
+```
+
+## Run the released Application Package:
+
+The release 1.0.0 contains the released Application Package include the update docker reference published in the Github container registry.
+
+Run the released Application Package with:
+
+```
+cwltool \
+    https://github.com/eoap/quickwin-inline-code/releases/download/1.0.0/app-water-body-inline-code.1.0.0.cwl \
+    params.yaml 
 ```
