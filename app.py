@@ -173,7 +173,7 @@ def main(item_url, aoi, bands, epsg):
         item = pystac.read_file(item_url)
 
     os.makedirs(item.id, exist_ok=True)
-    shutil.move(water_body, item.id)
+    shutil.copy(water_body, item.id)
 
     out_item = rio_stac.stac.create_stac_item(
         source=water_body,
@@ -191,6 +191,8 @@ def main(item_url, aoi, bands, epsg):
     cat.normalize_and_save(
         root_href="./", catalog_type=pystac.CatalogType.SELF_CONTAINED
     )
+    
+    os.remove(water_body)
 
     logger.info("Done!")
 

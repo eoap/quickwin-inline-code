@@ -112,5 +112,5 @@ jobs:
       with:
         upload_url: ${{needs.create-release.outputs.upload_url}}
         asset_path: downloads/app-water-body-inline-code.${{needs.version.outputs.app-version}}.cwl
-        asset_name: app-water-body--inline-code.${{needs.version.outputs.app-version}}.cwl
+        asset_name: app-water-body-inline-code.${{needs.version.outputs.app-version}}.cwl
         asset_content_type: text/yaml
