@@ -3,6 +3,7 @@ run-me.cwl
 catalog.json
 S2*
 *.tif
+workflow.cwl
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
