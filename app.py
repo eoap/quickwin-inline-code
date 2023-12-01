@@ -191,7 +191,7 @@ def main(item_url, aoi, bands, epsg):
     cat.normalize_and_save(
         root_href="./", catalog_type=pystac.CatalogType.SELF_CONTAINED
     )
-    
+
     os.remove(water_body)
 
     logger.info("Done!")

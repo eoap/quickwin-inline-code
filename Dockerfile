@@ -1,15 +1,9 @@
 FROM docker.io/python:3.10-slim
 
-RUN pip install --no-cache-dir \
-    rasterio \
-    click \
-    pystac \
-    loguru \
-    pyproj \
-    shapely \
-    scikit-image \
-    pystac \
-    rio_stac && \
-    python -c "import rasterio"
+ADD requirements.txt /tmp/requirements.txt
+
+RUN pip install --no-cache-dir -r /tmp/requirements.txt && \
+    python -c "import rasterio" && \
+    rm -rf /tmp/requirements.txt
 
 ENTRYPOINT []
