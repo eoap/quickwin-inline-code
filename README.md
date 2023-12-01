@@ -1,5 +1,8 @@
 # Application Package Quickwin with inline code
 
+![GitHub release (latest by SemVer and asset)](https://img.shields.io/github/downloads/eoap/quickwin-inline-code/1.0.0/app-water-body-inline-code.1.0.0.cwl)
+
+
 This repository contains a simple Python application `app.py` including a simple unit test as a demonstration of a "real" yet very simple Python EO application.
 
 This `app.py` is added to a CWL template as inline code that is staged and executed in a container.
