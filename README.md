@@ -32,7 +32,7 @@ aoi: "-121.399,39.834,-120.74,40.472"
 epsg: "EPSG:4326"
 ```
 
-## Run the released Application Package:
+## Run the released Application Package
 
 The release 1.0.0 contains the released Application Package include the update docker reference published in the Github container registry.
 
