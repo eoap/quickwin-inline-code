@@ -1,5 +1,9 @@
 # Application Package Quickwin with inline code
 
+This repository contains a simple Python application `app.py` including a simple unit test as a demonstration of a "real" yet very simple Python EO application.
+
+This `app.py` is added to a CWL template as inline code that is staged and executed in a container.
+
 ## Generate the Application Package with the inline code
 
 Update the Application Package template `workflow.cwl.template` with the Python `app.py` as the inline code to run:
