@@ -3,6 +3,11 @@ on:
   push:
     branches:
     - main
+    paths:
+    - app.py
+    - workflow.cwl.template
+    - requirements.txt
+    - Dockerfile
 
 jobs:
   python-unit-test:
