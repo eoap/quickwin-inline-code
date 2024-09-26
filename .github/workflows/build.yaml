@@ -6,6 +6,7 @@ on:
     paths:
     - app.py
     - .github/**
+    - docs/**
     - workflow.cwl.template
     - requirements.txt
     - Dockerfile

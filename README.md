@@ -1,4 +1,4 @@
-# Application Package Quickwin with inline code
+# Quickwin - An Application Package with inline Python code
 
 ![GitHub release (latest by SemVer and asset)](https://img.shields.io/github/downloads/eoap/quickwin-inline-code/1.0.0/app-water-body-inline-code.1.0.0.cwl)
 
