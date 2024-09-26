@@ -95,5 +95,6 @@ The key components of this CWL document are:
     * Generates a STAC catalog with the detected water bodies.
     * Cleans up temporary files after completion.
 
+The webpage of the documentation is https://eoap.github.io/quickwin-inline-code/. 
 
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey.svg)](https://creativecommons.org/licenses/by-sa/4.0/)
