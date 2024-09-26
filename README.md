@@ -2,7 +2,6 @@
 
 ![GitHub release (latest by SemVer and asset)](https://img.shields.io/github/downloads/eoap/quickwin-inline-code/1.0.0/app-water-body-inline-code.1.0.0.cwl)
 
-
 This repository contains a simple Python application `app.py` including a simple unit test as a demonstration of a "real" yet very simple Python EO application.
 
 Using CWL's [InitialWorkDirRequirement](https://www.commonwl.org/v1.2/CommandLineTool.html#InitialWorkDirRequirement), a requirement that defines a list of files and subdirectories that must be staged by the workflow platform prior to executing the command line tool, the Python script `app.py` is staged and executed in a container.

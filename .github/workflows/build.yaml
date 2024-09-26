@@ -5,6 +5,7 @@ on:
     - main
     paths:
     - app.py
+    - .github/**
     - workflow.cwl.template
     - requirements.txt
     - Dockerfile
