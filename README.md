@@ -95,3 +95,6 @@ The key components of this CWL document are:
     * The workflow runs the detect-water-body tool with specified inputs.
     * Generates a STAC catalog with the detected water bodies.
     * Cleans up temporary files after completion.
+
+
+[![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey.svg)](https://creativecommons.org/licenses/by-sa/4.0/)
