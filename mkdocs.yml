@@ -52,8 +52,8 @@ extra_javascript:
 
 nav:
   - Introduction: 'index.md'
-  - Background: 'explanation.md'
-  - App Package Generation: generate_AppPackage.md
+  - Background: 'background/explanation.md'
+  - App Package Generation: generate/generate_AppPackage.md
   - Execution:
     - Run the App Package: 'exec/run.md'
     - Run the released App Package: 'exec/run_release.md'
