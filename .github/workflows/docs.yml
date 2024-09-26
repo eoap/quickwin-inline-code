@@ -5,6 +5,7 @@ on:
       - develop
       - main
       - master
+      - gh-pages
     paths:
       # Only rebuild website when docs have changed
       - 'README.md'
