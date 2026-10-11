@@ -1,0 +1,13 @@
+-r runtime.in
+-c ../requirements.txt
+hatch==1.18.1
+hatchling>=1.27,<2
+uv
+editables>=0.5,<1
+pytest
+ruff
+mypy
+bandit
+
+cwltool
+PyYAML>=6,<7

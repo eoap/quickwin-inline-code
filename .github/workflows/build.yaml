@@ -1,136 +1,54 @@
-name: build
+name: Candidate publication
 on:
-  push:
-    branches:
-    - main
-    paths:
-    - app.py
-    - .github/**
-    - docs/**
-    - workflow.cwl.template
-    - requirements.txt
-    - Dockerfile
-
+  workflow_dispatch:
+    inputs:
+      publish_candidate:
+        description: Publish candidate image after processing checks
+        type: boolean
+        default: false
+permissions:
+  contents: read
 jobs:
-  python-unit-test:
-
+  validate:
+    uses: ./.github/workflows/acceptance.yml
+  candidate:
+    needs: validate
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.x
-    - run: pip install -r requirements.txt
-    - run: pip install nose2
-    - run: nose2
-
-  cwl-pack-validate:
-    needs: python-unit-test
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.x
-    - run: pip install cwltool
-    - run: content=`cat app.py` yq eval '.$graph[1].requirements.InitialWorkDirRequirement.listing[0].entry=strenv(content)' workflow.cwl.template > workflow.cwl
-    - run: cwltool --validate workflow.cwl
-
-  version:
-    needs: cwl-pack-validate
-
-    runs-on: ubuntu-latest
-
-    outputs:
-
-      app-version: ${{ steps.set-version.outputs.version }}
-
-    steps:
-    - uses: actions/checkout@v2
-    - run: echo "APP_VERSION=$(cat codemeta.json | jq -r .version )" >> $GITHUB_ENV
-    - run: echo app version is $APP_VERSION
-    - id: set-version
-      run: echo "::set-output name=version::$APP_VERSION"
-
-  container-build:
-
-    needs: version
-
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v2
-    - run: echo version ${{needs.version.outputs.app-version}}
-    - run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-    - name: build & push image
-      run: |
-        IMAGE_ID=ghcr.io/eoap/quickwin-inline-code/python-inline-code
-        docker build . --file Dockerfile --tag $IMAGE_ID:${{needs.version.outputs.app-version}}
-        docker push $IMAGE_ID:${{needs.version.outputs.app-version}}
-
-  create-release:
-
-    needs:
-    - container-build
-    - version
-
-    runs-on: ubuntu-latest
-
-    outputs:
-
-      upload_url: ${{ steps.set-upload-url.outputs.upload_url }}
-
-    steps:
-    - name: release
-      uses: actions/create-release@v1
-      id: create_release
-      with:
-        draft: false
-        prerelease: false
-        release_name: ${{needs.version.outputs.app-version}}
-        tag_name: ${{needs.version.outputs.app-version}}
-      env:
-        GITHUB_TOKEN: ${{ github.token }}
-    - id: set-upload-url
-      run: echo "::set-output name=upload_url::${{ steps.create_release.outputs.upload_url }}"
-
-  publish-artifacts:
-
-    needs:
-    - create-release
-    - version
-
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v2
-    - run: content=`cat app.py` yq eval '.$graph[1].requirements.InitialWorkDirRequirement.listing[0].entry=strenv(content)' workflow.cwl.template > workflow.cwl
-    - run: |
-        tag="ghcr.io/eoap/quickwin-inline-code/python-inline-code:${{needs.version.outputs.app-version}}"
-        docker pull ${tag}
-        shatag=$( docker inspect ${tag} | yq -r '.[0]["RepoDigests"][0]' )
-        s="detect-water-body" t="${shatag}" yq -i eval '(.$graph[] | select (.id == env(s)) ).hints.DockerRequirement.dockerPull = env(t)' workflow.cwl
-
-    - run: |
-        r=$( cat codemeta.json | jq -r ".codeRepository" ) yq -i eval '."s:codeRepository" = {"URL" : env(r)}' workflow.cwl
-        v="${{needs.version.outputs.app-version}}" yq -i eval '."s:softwareVersion" = env(v)' workflow.cwl
-        n=$(cat codemeta.json | jq -r '(.author[0].givenName + " " + .author[0].familyName)') \
-        e=$(cat codemeta.json | jq -r '.author[0].email') \
-        a=$(cat codemeta.json | jq -r '.author[0].affiliation["name"]') \
-        yq eval -i  '."s:author" += [{"class": "s:Person", "s.name": env(n), "s.email": env(e), "s.affiliation": env(a)}]' workflow.cwl
-    - run: |
-        mkdir downloads
-        cp workflow.cwl downloads/app-water-body-inline-code.${{needs.version.outputs.app-version}}.cwl
-    - uses: actions/upload-artifact@v4
-      with:
-        name: application-package
-        path: downloads
-    - name: upload linux artifact 1
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ github.token }}
-      with:
-        upload_url: ${{needs.create-release.outputs.upload_url}}
-        asset_path: downloads/app-water-body-inline-code.${{needs.version.outputs.app-version}}.cwl
-        asset_name: app-water-body-inline-code.${{needs.version.outputs.app-version}}.cwl
-        asset_content_type: text/yaml
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v6
+      - run: uv pip install --system --require-hashes -r requirements/development.txt
+      - name: Build the intended runtime
+        run: |
+          docker build -t ghcr.io/eoap/quickwin-inline-code/python-inline-code:2.0.0-rc.${{ github.run_number }} .
+          docker run --rm ghcr.io/eoap/quickwin-inline-code/python-inline-code:2.0.0-rc.${{ github.run_number }} python -m app --help
+      - uses: docker/login-action@v3
+        if: inputs.publish_candidate
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish candidate and prepare immutable CWL
+        if: inputs.publish_candidate
+        run: |
+          image=ghcr.io/eoap/quickwin-inline-code/python-inline-code:2.0.0-rc.${{ github.run_number }}
+          docker push "$image"
+          published=$(docker inspect "$image" --format '{{index .RepoDigests 0}}')
+          mkdir candidate
+          python scripts/prepare-inline.py --image "$published" --version 2.0.0-rc.${{ github.run_number }} --output candidate/app-water-body-inline-code.cwl
+          cwltool --validate candidate/app-water-body-inline-code.cwl
+          cd candidate
+          sha256sum app-water-body-inline-code.cwl > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        if: inputs.publish_candidate
+        with:
+          name: inline-code-candidate
+          path: candidate
+# Stable promotion requires recorded real-data and immutable-artifact acceptance,
+# resolved license metadata, and explicit release authorization.

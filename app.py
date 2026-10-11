@@ -1,22 +1,29 @@
 import os
-import click
-import pystac
-import rasterio
-from skimage.filters import threshold_otsu
-from rasterio.mask import mask
-from pyproj import Transformer
-from shapely import box
-from loguru import logger
-import rasterio
-import pystac
 import shutil
-import rio_stac
+
+import click
 import numpy as np
+import pystac
+import rasterio
+import rio_stac
+from loguru import logger
+from numpy.typing import NDArray
+from pyproj import Transformer
+from pystac.extensions.eo import AssetEOExtension
+from rasterio.mask import mask
+from shapely import box
+from skimage.filters import threshold_otsu
+
+os.environ.setdefault("GDAL_DISABLE_READDIR_ON_OPEN", "EMPTY_DIR")
+os.environ.setdefault("GDAL_HTTP_TIMEOUT", "60")
+os.environ.setdefault("GDAL_HTTP_MAX_RETRY", "3")
 
 np.seterr(divide="ignore", invalid="ignore")
 
 
-def crop(asset: pystac.Asset, bbox, epsg):
+def crop(
+    asset: pystac.Asset, bbox: list[float], epsg: str
+) -> tuple[NDArray[np.float32], dict[str, object]]:
     """_summary_
 
     Args:
@@ -28,7 +35,6 @@ def crop(asset: pystac.Asset, bbox, epsg):
         _type_: _description_
     """
     with rasterio.open(asset.get_absolute_href()) as src:
-
         transformer = Transformer.from_crs(epsg, src.crs, always_xy=True)
 
         minx, miny = transformer.transform(bbox[0], bbox[1])
@@ -38,10 +44,8 @@ def crop(asset: pystac.Asset, bbox, epsg):
 
         logger.info(f"Crop {asset.get_absolute_href()}")
 
-        out_image, out_transform = rasterio.mask.mask(
-            src, [transformed_bbox], crop=True
-        )
-        out_meta = src.meta.copy()
+        out_image, out_transform = mask(src, [transformed_bbox], crop=True)
+        out_meta: dict[str, object] = src.meta.copy()
 
         out_meta.update(
             {
@@ -51,44 +55,61 @@ def crop(asset: pystac.Asset, bbox, epsg):
             }
         )
 
-        return out_image.astype(np.float32), out_meta
+        cropped: NDArray[np.float32] = out_image.astype(np.float32)
+        return cropped, out_meta
 
 
-def threshold(data):
+def threshold(data: NDArray[np.float32]) -> NDArray[np.bool_]:
     """Returns the Otsu threshold of a numpy array"""
-    return data > threshold_otsu(data[np.isfinite(data)])
+    result: NDArray[np.bool_] = data > threshold_otsu(data[np.isfinite(data)])
+    return result
 
 
-def normalized_difference(array1, array2):
+def normalized_difference(
+    array1: NDArray[np.float32], array2: NDArray[np.float32]
+) -> NDArray[np.float32]:
     """Returns the normalized difference of two numpy arrays"""
-    return (array1 - array2) / (array1 + array2)
+    result: NDArray[np.float32] = (array1 - array2) / (array1 + array2)
+    return result
 
 
-def aoi2box(aoi):
+def aoi2box(aoi: str) -> list[float]:
     """Converts an area of interest expressed as a bounding box to a list of floats"""
     return [float(c) for c in aoi.split(",")]
 
 
-def get_asset(item, common_name):
+def get_asset(item: pystac.Item, common_name: str) -> pystac.Asset | None:
     """Returns the asset of a STAC Item defined with its common band name"""
     for _, asset in item.get_assets().items():
-        if not "data" in asset.to_dict()["roles"]:
+        if "data" not in asset.to_dict()["roles"]:
             continue
 
-        eo_asset = pystac.extensions.eo.AssetEOExtension(asset)
+        eo_asset = AssetEOExtension(asset)
         if not eo_asset.bands:
             continue
         for b in eo_asset.bands:
-            if (
-                "common_name" in b.properties.keys()
-                and b.properties["common_name"] == common_name
-            ):
+            if b.common_name == common_name:
                 return asset
+    return None
+
+
+def read_item(item_url: str) -> pystac.Item:
+    item: pystac.STACObject | None
+    if os.path.isdir(item_url):
+        catalog = pystac.read_file(os.path.join(item_url, "catalog.json"))
+        if not isinstance(catalog, pystac.Catalog):
+            raise ValueError("Staged input must contain a STAC Catalog")
+        item = next(iter(catalog.get_items()), None)
+    else:
+        item = pystac.read_file(item_url)
+    if not isinstance(item, pystac.Item):
+        raise ValueError("Input must identify a STAC Item")
+    return item
 
 
 @click.command(
-    short_help="Crop",
-    help="Crops a STAC Item asset defined with its common band name",
+    short_help="Water bodies detection",
+    help="Detects water bodies using the Normalized Difference Water Index (NDWI) and Otsu thresholding.",
 )
 @click.option(
     "--input-item",
@@ -115,26 +136,22 @@ def get_asset(item, common_name):
     required=True,
     multiple=True,
 )
-def main(item_url, aoi, bands, epsg):
-
-    if os.path.isdir(item_url):
-        catalog = pystac.read_file(os.path.join(item_url, "catalog.json"))
-        item = next(catalog.get_items())
-    else:
-        item = pystac.read_file(item_url)
-
+def main(item_url: str, aoi: str, bands: tuple[str, ...], epsg: str) -> None:
+    item = read_item(item_url)
+    if len(bands) != 2:
+        raise ValueError("NDWI requires exactly two common band names")
     logger.info(f"Read {item.id} from {item.get_self_href()}")
 
-    cropped_assets = {}
+    cropped_assets: dict[str, NDArray[np.float32]] = {}
 
     for band in bands:
         asset = get_asset(item, band)
-        logger.info(f"Read asset {band} from {asset.get_absolute_href()}")
-
         if not asset:
             msg = f"Common band name {band} not found in the assets"
             logger.error(msg)
             raise ValueError(msg)
+
+        logger.info(f"Read asset {band} from {asset.get_absolute_href()}")
 
         bbox = aoi2box(aoi)
 
@@ -149,6 +166,7 @@ def main(item_url, aoi, bands, epsg):
     out_meta.update(
         {
             "dtype": "uint8",
+            "nodata": None,
             "driver": "COG",
             "tiled": True,
             "compress": "lzw",
@@ -160,17 +178,11 @@ def main(item_url, aoi, bands, epsg):
     water_body = "otsu.tif"
 
     with rasterio.open(water_body, "w", **out_meta) as dst_dataset:
-        logger.info(f"Write otsu.tif")
+        logger.info("Write otsu.tif")
         dst_dataset.write(water_bodies, indexes=1)
 
-    logger.info(f"Creating a STAC Catalog")
+    logger.info("Creating a STAC Catalog")
     cat = pystac.Catalog(id="catalog", description="water-bodies")
-
-    if os.path.isdir(item_url):
-        catalog = pystac.read_file(os.path.join(item_url, "catalog.json"))
-        item = next(catalog.get_items())
-    else:
-        item = pystac.read_file(item_url)
 
     os.makedirs(item.id, exist_ok=True)
     shutil.copy(water_body, item.id)
@@ -183,16 +195,12 @@ def main(item_url, aoi, bands, epsg):
         asset_href=os.path.basename(water_body),
         asset_name="data",
         with_proj=True,
-        with_raster=False,
+        with_raster=True,
     )
 
     cat.add_items([out_item])
 
-    cat.normalize_and_save(
-        root_href="./", catalog_type=pystac.CatalogType.SELF_CONTAINED
-    )
-
-    os.remove(water_body)
+    cat.normalize_and_save(root_href="./", catalog_type=pystac.CatalogType.SELF_CONTAINED)
 
     logger.info("Done!")
 
