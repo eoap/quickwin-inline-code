@@ -85,8 +85,8 @@ $graph:
       envDef:
         PYTHONPATH: /app
     ResourceRequirement:
-      coresMax: 1
-      ramMax: 512
+      coresMax: 2
+      ramMax: 4096
     NetworkAccess:
       networkAccess: true
     InitialWorkDirRequirement:
