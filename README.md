@@ -14,17 +14,15 @@ The CWL document generated is available in the [releases section](https://github
 
 Update the Application Package template `workflow.cwl.template` with the Python `app.py` as the inline code to run:
 
+```bash
+python scripts/prepare-inline.py --output workflow.cwl
 ```
-content=`cat app.py` yq eval '.$graph[1].requirements.InitialWorkDirRequirement.listing[0].entry=strenv(content)' workflow.cwl.template > workflow.cwl
-```
 
-Here's a breakdown of the command:
-
-* `cat app.py`: This command outputs the contents of the `app.py` file.
-
-* `yq eval '.$graph[1].requirements.InitialWorkDirRequirement.listing[0].entry=strenv(content)' workflow.cwl.template`: This command uses yq to evaluate a YAML expression on the `workflow.cwl.template` file. The expression modifies the entry at a specific path in the CWL `InitialWorkDirRequirement`, setting it to the content of `app.py`.
-
-* `> workflow.cwl`: This part of the command redirects the modified output to a new file named `workflow.cwl`.
+The generated CWL v1.2 document embeds the complete standalone `app.py`, retains
+the published URI schema import, and includes its module-owned types inline.
+It accepts a URI record, named bounding-box coordinates and quoted CRS code
+`"4326"`; the command converts the code to `EPSG:4326` at the CLI boundary.
+Use `--image <local-tag-or-published-digest>` to test the intended image.
 
 ## Run the Application Package
 
@@ -37,9 +35,17 @@ cwltool workflow.cwl params.yaml
 Where `params.yaml` contains:
 
 ```yaml
-item: "https://earth-search.aws.element84.com/v0/collections/sentinel-s2-l2a-cogs/items/S2B_10TFK_20210713_0_L2A"
-aoi: "-121.399,39.834,-120.74,40.472"
-epsg: "EPSG:4326"
+item:
+  value: https://earth-search.aws.element84.com/v0/collections/sentinel-s2-l2a-cogs/items/S2B_10TFK_20210713_0_L2A
+aoi:
+  west: -121.399
+  south: 39.834
+  east: -120.74
+  north: 40.472
+epsg: '4326'
+bands:
+- green
+- nir
 ```
 
 ## Run the released Application Package
@@ -98,3 +104,14 @@ The key components of this CWL document are:
 The webpage of the documentation is https://eoap.github.io/quickwin-inline-code/. 
 
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey.svg)](https://creativecommons.org/licenses/by-sa/4.0/)
+## Package and runtime checks
+
+Python 3.12 is required. Run `hatch run dev:check` and `hatch run test:test`
+for hash-locked quality and processing regressions. The wheel includes the same
+standalone `app.py` embedded in CWL, so inline execution remains supported.
+The two-stage Rocky 10.1 image installs the wheel and locked runtime, runs as
+`neo` (UID/GID 2000), verifies dependencies and removes venv pip.
+
+The next major version is 2.0.0. Stable promotion still requires accepted immutable image/CWL
+artifacts and review of the existing license/author metadata: the checked-in
+license says CC BY-SA while CodeMeta currently says CC BY-NC-SA.

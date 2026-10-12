@@ -1,0 +1,40 @@
+{
+  "processing_commit": "f5505aa92273d353e1a4774301f01f4b9b50bd31",
+  "workflow_commit": "811f61ba3494df62153c882e68b7ec888defda18",
+  "inline_source_embedded": true,
+  "typed_uri_over_http": true,
+  "unit_tests_on_minikube": 6,
+  "image": "eoap-quickwin-inline:rocky-f5505aa",
+  "real_data_provenance": {
+    "original_acquisition": "S2A_MSIL2A_20210618T184921_R113_T10TFK_20210619T045630",
+    "original_datetime": "2021-06-18T18:49:21.024000+00:00",
+    "retained_green": "/calrissian/real-us-lake/tmp_3x6cgz4/crop_green.tif",
+    "retained_nir": "/calrissian/real-us-lake/tmp1hi074r0/crop_nir.tif",
+    "shape": [
+      7205,
+      5460
+    ],
+    "crs": "EPSG:32610",
+    "matching_original_ndwi_sample": true,
+    "remote_staging_rerun": false
+  },
+  "shape": [
+    7205,
+    5460
+  ],
+  "projection": "EPSG:32610",
+  "bbox": [
+    -121.39905410179915,
+    39.82336095080462,
+    -120.73995321724426,
+    40.482798837728375
+  ],
+  "datetime": "2021-06-18T18:49:21.024000+00:00",
+  "nodata": null,
+  "binary_land_and_water": true,
+  "zero_land_is_valid": true,
+  "pixels_equal_previous_processing": true,
+  "remote_stage_in_rerun": false,
+  "full_notebook_acceptance": false,
+  "published_candidate_acceptance": false
+}

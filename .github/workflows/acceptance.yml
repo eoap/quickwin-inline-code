@@ -1,0 +1,29 @@
+name: Processing model acceptance
+on:
+  push:
+    branches: ['feature/**']
+  pull_request:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  processing:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v6
+      - run: |
+          uv pip install --system --require-hashes -r requirements/development.txt
+          uv pip install --system --no-deps --no-build-isolation -e .
+      - run: hatch run dev:check
+      - run: hatch run test:test
+      - run: |
+          python scripts/prepare-inline.py --output /tmp/inline.cwl
+          cwltool --validate /tmp/inline.cwl
+      - run: |
+          docker build -t inline-processing:test .
+          docker run --rm inline-processing:test python -m app --help
+          docker run --rm inline-processing:test python -c 'import importlib.util,os; assert os.getuid()==os.getgid()==2000; assert importlib.util.find_spec("pip") is None'

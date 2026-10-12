@@ -1,0 +1,9 @@
+-c ../requirements.txt
+rasterio==1.5.1
+click==8.4.1
+pystac==1.15.2
+loguru==0.7.3
+pyproj==3.7.2
+shapely==2.1.2
+scikit-image
+rio-stac==0.12.0
